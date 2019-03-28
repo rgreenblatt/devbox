@@ -1,34 +1,64 @@
-FROM ubuntu:16.04
-#No wpilib toolchain for 18.04 :(
-
-MAINTAINER Ryan Greenblatt <greenblattryan@gmail.com>
+FROM vastai/pytorch
 
 USER root
-
 RUN apt-get update
+
+#get add-apt-repository
 RUN apt-get install -y software-properties-common
-RUN apt-get install -y openjdk-8-jdk-headless wget unzip vim  
-RUN apt-get install -y g++ git cmake cmake-extras
-RUN apt-get install -y sudo
 
-WORKDIR /TEMP
+#install neovim
+RUN add-apt-repository -y ppa:neovim-ppa/unstable
+RUN apt-get update
+RUN apt-get install -y neovim
+RUN pip install neovim-remote pynvim
 
-#Installs googletest
-RUN wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz
-RUN tar -xzvf release-1.8.0.tar.gz
-WORKDIR /TEMP/googletest-release-1.8.0/googletest
-RUN mkdir mybuild
-WORKDIR /TEMP/googletest-release-1.8.0/googletest/mybuild
-RUN cmake -G"Unix Makefiles" ..
-RUN make
+#install rust packages
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN ~/.cargo/bin/cargo install bat exa ripgrep
 
-RUN cp lib*.a /usr/local/lib
-RUN cp -r ../include/gtest /usr/local/include
+#install zsh
+RUN apt-get install -y  git-core gcc make autoconf yodl libncursesw5-dev texinfo man-db
+RUN git clone https://github.com/zsh-users/zsh
+RUN cd zsh && ./Util/preconfig && ./configure --prefix=/usr \
+    --mandir=/usr/share/man \
+    --bindir=/bin \
+    --infodir=/usr/share/info \
+    --enable-maildir-support \
+    --enable-max-jobtable-size=256 \
+    --enable-etcdir=/etc/zsh \
+    --enable-function-subdirs \
+    --enable-site-fndir=/usr/local/share/zsh/site-functions \
+    --enable-fndir=/usr/share/zsh/functions \
+    --with-tcsetpgrp \
+    --with-term-lib="ncursesw" \
+    --enable-cap \
+    --enable-pcre \
+    --enable-readnullcmd=pager \
+    --enable-custom-patchlevel=Debian \
+    LDFLAGS="-Wl,--as-needed -g" && \
+    make && make check && make install
+RUN chsh -s /bin/zsh
 
-RUN useradd -m builder && echo "builder:builder" | chpasswd && adduser builder sudo
+#install dotfiles
+RUN echo "dkf"
+RUN rm -f ~/.profile
+RUN git clone https://github.com/rgreenblatt/dotfiles
+RUN cd dotfiles && ./install.sh -c
 
-RUN DEBIAN_FRONTEND=interactive
+#nvim plug sync
+RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+RUN nvim +PlugInstall +qa
+RUN /bin/zsh -c "source ~/.profile"
+ENV SHELL=/bin/zsh 
 
-USER builder
-WORKDIR /home/builder
-ENV HOME /home/builder
+
+#python installs
+RUN apt-get install -y python3.5-dev
+RUN curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.5
+RUN python3.5 -m easy_install pip==10.0.1
+RUN pip3.5 install tensorflow
+RUN pip install dropbox dill tensorboardX albumentations
+RUN apt-get install -y unzip python-qt4 libglib2.0-0
+
+CMD [ "/usr/bin/nvim", "+te"]
