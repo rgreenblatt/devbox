@@ -40,7 +40,6 @@ RUN cd zsh && ./Util/preconfig && ./configure --prefix=/usr \
 RUN chsh -s /bin/zsh
 
 #install dotfiles
-RUN echo "dkf"
 RUN rm -f ~/.profile
 RUN git clone https://github.com/rgreenblatt/dotfiles
 RUN cd dotfiles && ./install.sh -c
