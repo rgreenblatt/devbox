@@ -39,25 +39,32 @@ RUN cd zsh && ./Util/preconfig && ./configure --prefix=/usr \
     make && make check && make install
 RUN chsh -s /bin/zsh
 
-#install dotfiles
-RUN rm -f ~/.profile
-RUN git clone https://github.com/rgreenblatt/dotfiles
-RUN cd dotfiles && ./install.sh -c
-
-#nvim plug sync
-RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-RUN nvim +PlugInstall +qa
-RUN /bin/zsh -c "source ~/.profile"
-ENV SHELL=/bin/zsh 
-
-
 #python installs
+RUN apt-get update
 RUN apt-get install -y python3.5-dev
 RUN curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.5
 RUN python3.5 -m easy_install pip==10.0.1
 RUN pip3.5 install tensorflow
 RUN pip install dropbox dill tensorboardX albumentations
-RUN apt-get install -y unzip python-qt4 libglib2.0-0
+RUN apt-get install -y unzip python-qt4 libglib2.0-0 pkg-config
+
+#ctags
+RUN git clone https://github.com/universal-ctags/ctags.git
+RUN cd ctags && ./autogen.sh && ./configure && make && make install
+
+#install dotfiles
+RUN rm -f ~/.profile
+RUN git clone https://github.com/rgreenblatt/dotfiles
+RUN cd dotfiles && ./install.sh devbox -c
+
+#nvim plug sync
+RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+RUN nvim +PlugInstall +qa
+RUN /bin/zsh -c "source ~/.profile && bat cache --build"
+RUN cd ~/.fzf && ./install --all
+ENV SHELL=/bin/zsh 
+
+RUN rm -rf ctags setuptools* zsh 
 
 CMD [ "/usr/bin/nvim", "+te"]
