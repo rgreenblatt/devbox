@@ -46,7 +46,7 @@ RUN curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.5
 RUN python3.5 -m easy_install pip==10.0.1
 RUN pip3.5 install tensorflow
 RUN pip install dropbox dill tensorboardX albumentations tqdm opencv-python \
-      sklearn
+      sklearn dominate
 RUN apt-get install -y unzip python-qt4 libglib2.0-0 pkg-config
 
 #ctags
