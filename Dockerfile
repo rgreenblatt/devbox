@@ -53,8 +53,13 @@ RUN apt-get install -y unzip python-qt4 libglib2.0-0 pkg-config
 RUN git clone https://github.com/universal-ctags/ctags.git
 RUN cd ctags && ./autogen.sh && ./configure && make && make install
 
+#git (my user name by default)
+RUN git config --global user.email "greenblattryan@gmail.com"
+RUN git config --global user.name "rgreenblatt"
+
 #install dotfiles
 RUN rm -f ~/.profile
+RUN echo ""
 RUN git clone https://github.com/rgreenblatt/dotfiles
 RUN cd dotfiles && ./install.sh devbox -c
 
@@ -62,10 +67,10 @@ RUN cd dotfiles && ./install.sh devbox -c
 RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 RUN nvim +PlugInstall +qa
-RUN /bin/zsh -c "source ~/.profile && bat cache --build"
 RUN cd ~/.fzf && ./install --all
 ENV SHELL=/bin/zsh 
+RUN /bin/zsh -c "source ~/.profile && bat cache --build"
 
 RUN rm -rf ctags setuptools* zsh 
 
-CMD [ "/usr/bin/nvim", "+te"]
+CMD bash -c "source /root/.profile && /usr/bin/nvim +te"
