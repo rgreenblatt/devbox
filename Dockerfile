@@ -53,10 +53,6 @@ RUN apt-get install -y unzip python-qt4 libglib2.0-0 pkg-config
 RUN git clone https://github.com/universal-ctags/ctags.git
 RUN cd ctags && ./autogen.sh && ./configure && make && make install
 
-#git (my user name by default)
-RUN git config --global user.email "greenblattryan@gmail.com"
-RUN git config --global user.name "rgreenblatt"
-
 #install dotfiles
 RUN rm -f ~/.profile
 RUN echo ""
