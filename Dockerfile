@@ -1,23 +1,45 @@
-FROM vastai/pytorch
+FROM ubuntu:18.04
 
 USER root
-RUN apt-get update
 
-#get add-apt-repository
-RUN apt-get install -y software-properties-common
+RUN mkdir /install
+WORKDIR /install
 
-#install neovim
-RUN add-apt-repository -y ppa:neovim-ppa/unstable
-RUN apt-get update
-RUN apt-get install -y neovim
-RUN pip install neovim-remote pynvim
+RUN apt-get update && apt-get install -y \
+      software-properties-common \
+      python3-dev \
+      git \
+      build-essential \
+      cmake \
+      autoconf \
+      yodl \
+      libncursesw5-dev \
+      texinfo \
+      man-db \
+      gperf \
+      luajit \
+      luarocks \
+      libuv1-dev \
+      libluajit-5.1-dev \
+      libunibilium-dev \
+      libmsgpack-dev \
+      libtermkey-dev \
+      libvterm-dev \
+      gettext
+
+RUN git clone --single-branch --branch floatblend \
+      https://github.com/bfredl/neovim.git && cd neovim && \
+      make CMAKE_BUILD_TYPE=RelWithDebInfo && make install
 
 #install rust packages
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-RUN ~/.cargo/bin/cargo install bat exa ripgrep
+RUN ~/.cargo/bin/cargo install \
+      bat \
+      exa \
+      ripgrep
 
 #install zsh
-RUN apt-get install -y  git-core gcc make autoconf yodl libncursesw5-dev texinfo man-db
+RUN apt-get install -y  
 RUN git clone https://github.com/zsh-users/zsh
 RUN cd zsh && ./Util/preconfig && ./configure --prefix=/usr \
     --mandir=/usr/share/man \
@@ -39,26 +61,11 @@ RUN cd zsh && ./Util/preconfig && ./configure --prefix=/usr \
     make && make check && make install
 RUN chsh -s /bin/zsh
 
-#python installs
-RUN apt-get update
-RUN apt-get install -y python3.5-dev
-RUN curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.5
-RUN python3.5 -m easy_install pip==10.0.1
-RUN pip3.5 install tensorflow
-RUN pip install dropbox dill tensorboardX albumentations tqdm opencv-python \
-      sklearn dominate
-RUN apt-get install -y unzip python-qt4 libglib2.0-0 pkg-config
-
 #ctags
 RUN git clone https://github.com/universal-ctags/ctags.git
 RUN cd ctags && ./autogen.sh && ./configure && make && make install
 
-#git (my user name by default)
-RUN git config --global user.email "greenblattryan@gmail.com"
-RUN git config --global user.name "rgreenblatt"
-
 #install dotfiles
-RUN rm -f ~/.profile
 RUN echo ""
 RUN git clone https://github.com/rgreenblatt/dotfiles
 RUN cd dotfiles && ./install.sh devbox -c
@@ -69,8 +76,9 @@ RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
 RUN nvim +PlugInstall +qa
 RUN cd ~/.fzf && ./install --all
 ENV SHELL=/bin/zsh 
+RUN mkdir ~/.cache
 RUN /bin/zsh -c "source ~/.profile && bat cache --build"
 
-RUN rm -rf ctags setuptools* zsh 
+RUN rm -rf ctags setuptools* zsh neovim
 
 CMD bash -c "source /root/.profile && /usr/bin/nvim +te"
