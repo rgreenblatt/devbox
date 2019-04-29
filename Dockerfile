@@ -8,15 +8,12 @@ WORKDIR /install
 RUN apt-get update && apt-get install -y \
       software-properties-common \
       python3-dev \
+      python3-pip \
       git \
       build-essential \
       cmake \
-      autoconf \
-      yodl \
-      libncursesw5-dev \
       texinfo \
       man-db \
-      gperf \
       luajit \
       luarocks \
       libuv1-dev \
@@ -25,7 +22,12 @@ RUN apt-get update && apt-get install -y \
       libmsgpack-dev \
       libtermkey-dev \
       libvterm-dev \
-      gettext
+      gettext \
+      m4 \
+      automake \
+      zsh
+
+RUN chsh -s /bin/zsh
 
 RUN git clone --single-branch --branch floatblend \
       https://github.com/bfredl/neovim.git && cd neovim && \
@@ -38,47 +40,30 @@ RUN ~/.cargo/bin/cargo install \
       exa \
       ripgrep
 
-#install zsh
-RUN apt-get install -y  
-RUN git clone https://github.com/zsh-users/zsh
-RUN cd zsh && ./Util/preconfig && ./configure --prefix=/usr \
-    --mandir=/usr/share/man \
-    --bindir=/bin \
-    --infodir=/usr/share/info \
-    --enable-maildir-support \
-    --enable-max-jobtable-size=256 \
-    --enable-etcdir=/etc/zsh \
-    --enable-function-subdirs \
-    --enable-site-fndir=/usr/local/share/zsh/site-functions \
-    --enable-fndir=/usr/share/zsh/functions \
-    --with-tcsetpgrp \
-    --with-term-lib="ncursesw" \
-    --enable-cap \
-    --enable-pcre \
-    --enable-readnullcmd=pager \
-    --enable-custom-patchlevel=Debian \
-    LDFLAGS="-Wl,--as-needed -g" && \
-    make && make check && make install
-RUN chsh -s /bin/zsh
-
 #ctags
 RUN git clone https://github.com/universal-ctags/ctags.git
 RUN cd ctags && ./autogen.sh && ./configure && make && make install
 
 #install dotfiles
-RUN echo ""
+RUN echo "!"
 RUN git clone https://github.com/rgreenblatt/dotfiles
 RUN cd dotfiles && ./install.sh devbox -c
+
+RUN pip3 install \
+      neovim-remote \
+      pynvim \
+      thefuck
 
 #nvim plug sync
 RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 RUN nvim +PlugInstall +qa
 RUN cd ~/.fzf && ./install --all
+RUN cd ~/.local/share/nvim/plugged/sneak-quick-scope/src/ && ./build.sh && cp sneak_quick_scope /usr/local/bin/
 ENV SHELL=/bin/zsh 
-RUN mkdir ~/.cache
+RUN mkdir -p ~/.cache
 RUN /bin/zsh -c "source ~/.profile && bat cache --build"
 
 RUN rm -rf ctags setuptools* zsh neovim
 
-CMD bash -c "source /root/.profile && /usr/bin/nvim +te"
+CMD bash -c "source /root/.profile && nvim +te"
