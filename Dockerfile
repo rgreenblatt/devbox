@@ -25,7 +25,13 @@ RUN apt-get update && apt-get install -y \
       gettext \
       m4 \
       automake \
-      zsh
+      zsh \
+      unzip \
+      pkg-config \
+      libsm6 \
+      libxext6 \
+      libxrender-dev
+
 
 RUN chsh -s /bin/zsh
 
@@ -38,14 +44,15 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN ~/.cargo/bin/cargo install \
       bat \
       exa \
-      ripgrep
+      ripgrep \
+      fd-find \
+      sd
 
 #ctags
 RUN git clone https://github.com/universal-ctags/ctags.git
 RUN cd ctags && ./autogen.sh && ./configure && make && make install
 
 #install dotfiles
-RUN echo "!"
 RUN git clone https://github.com/rgreenblatt/dotfiles
 RUN cd dotfiles && ./install.sh devbox -c
 
@@ -57,8 +64,13 @@ RUN pip3 install \
 #nvim plug sync
 RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+# RUN curl -L  \
+#   https://raw.githubusercontent.com/zplug/installer/master/installer.zsh > \
+#   installer.zsh \
+#   && chmod +x installer.zsh && ./installer.zsh
 RUN nvim +PlugInstall +qa
 RUN cd ~/.fzf && ./install --all
+# RUN zsh -c "source ~/.zshrc && zplug install"
 RUN cd ~/.local/share/nvim/plugged/sneak-quick-scope/src/ && ./build.sh && cp sneak_quick_scope /usr/local/bin/
 ENV SHELL=/bin/zsh 
 RUN mkdir -p ~/.cache
