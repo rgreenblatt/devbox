@@ -2,9 +2,11 @@ FROM nvidia/cuda:10.1-devel-ubuntu18.04
 
 USER root
 
+#install directory {{{1
 RUN mkdir /install
 WORKDIR /install
 
+#general installs {{{1
 RUN apt-get update && apt-get install -y \
       software-properties-common \
       python3-dev \
@@ -12,8 +14,16 @@ RUN apt-get update && apt-get install -y \
       git \
       build-essential \
       cmake \
-      texinfo \
-      man-db \
+      unzip \
+      man-db
+      
+#zsh {{{1
+RUN apt-get update && apt-get install -y zsh
+ENV SHELL=/bin/zsh 
+
+#install neovim {{{1
+RUN apt-get update && apt-get install -y \
+      gperf \
       luajit \
       luarocks \
       libuv1-dev \
@@ -22,60 +32,45 @@ RUN apt-get update && apt-get install -y \
       libmsgpack-dev \
       libtermkey-dev \
       libvterm-dev \
-      gettext \
       m4 \
       automake \
-      zsh \
-      unzip \
-      pkg-config \
-      libsm6 \
-      libxext6 \
-      libxrender-dev
-
-
-RUN chsh -s /bin/zsh
-
-RUN git clone --single-branch --branch floatblend \
+      gettext && \
+      git clone --single-branch --branch floatblend \
       https://github.com/bfredl/neovim.git && cd neovim && \
-      make CMAKE_BUILD_TYPE=RelWithDebInfo && make install
+      make CMAKE_BUILD_TYPE=RelWithDebInfo && make install && \
+      pip3 install \
+      neovim-remote \
+      pynvim
 
-#install rust packages
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-RUN ~/.cargo/bin/cargo install \
+#install rust packages {{{1
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+      ~/.cargo/bin/cargo install \
       bat \
       exa \
       ripgrep \
       fd-find \
       sd
 
-#ctags
-RUN git clone https://github.com/universal-ctags/ctags.git
-RUN cd ctags && ./autogen.sh && ./configure && make && make install
+#ctags {{{1
+RUN git clone https://github.com/universal-ctags/ctags.git && cd ctags && \
+      ./autogen.sh && ./configure && make && make install
+      
 
-#install dotfiles
-RUN git clone https://github.com/rgreenblatt/dotfiles
-RUN cd dotfiles && ./install.sh devbox -c
+#install general python packages {{{1
+RUN pip3 install thefuck
 
-RUN pip3 install \
-      neovim-remote \
-      pynvim \
-      thefuck
+#fix locale issues??? {{{1
+RUN apt-get clean && apt-get update && apt-get install -y locales && \
+      locale-gen en_US.UTF-8 && update-locale LC_ALL=en_US.UTF-8 \
+      LANG=en_US.UTF-8
 
-#nvim plug sync
-RUN curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-# RUN curl -L  \
-#   https://raw.githubusercontent.com/zplug/installer/master/installer.zsh > \
-#   installer.zsh \
-#   && chmod +x installer.zsh && ./installer.zsh
-RUN nvim +PlugInstall +qa
-RUN cd ~/.fzf && ./install --all
-# RUN zsh -c "source ~/.zshrc && zplug install"
-RUN cd ~/.local/share/nvim/plugged/sneak-quick-scope/src/ && ./build.sh && cp sneak_quick_scope /usr/local/bin/
-ENV SHELL=/bin/zsh 
-RUN mkdir -p ~/.cache
-RUN /bin/zsh -c "source ~/.profile && bat cache --build"
+#install dotfiles {{{1
+RUN git clone https://github.com/rgreenblatt/dotfiles && \
+      cd dotfiles && ./install.sh devbox -c && ./autoinstall.sh
 
-RUN rm -rf ctags setuptools* zsh neovim
+#clean up {{{1
+WORKDIR /root/
+RUN rm -rf /install
+#}}}
 
-CMD bash -c "source /root/.profile && nvim +te"
+# vim: set fdm=marker:
