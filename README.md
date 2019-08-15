@@ -1,5 +1,3 @@
 # devbox
 
-Python/ML tools in a box.
-
-
+My basic development environment. (Minus some of the heavier stuff).

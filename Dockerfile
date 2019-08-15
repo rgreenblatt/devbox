@@ -8,39 +8,24 @@ WORKDIR /install
 
 #general installs {{{1
 RUN apt-get update && apt-get install -y \
-      software-properties-common \
-      python3-dev \
-      python3-pip \
-      git \
       build-essential \
       cmake \
-      unzip \
-      man-db
+      curl \
+      git \
+      man-db \
+      python3-dev \
+      python3-pip \
+      software-properties-common \
+      unzip
       
 #zsh {{{1
 RUN apt-get update && apt-get install -y zsh
 ENV SHELL=/bin/zsh 
 
 #install neovim {{{1
-RUN apt-get update && apt-get install -y \
-      gperf \
-      luajit \
-      luarocks \
-      libuv1-dev \
-      libluajit-5.1-dev \
-      libunibilium-dev \
-      libmsgpack-dev \
-      libtermkey-dev \
-      libvterm-dev \
-      m4 \
-      automake \
-      gettext && \
-      git clone --single-branch --branch floatblend \
-      https://github.com/bfredl/neovim.git && cd neovim && \
-      make CMAKE_BUILD_TYPE=RelWithDebInfo && make install && \
-      pip3 install \
-      neovim-remote \
-      pynvim
+RUN add-apt-repository ppa:neovim-ppa/unstable && \
+      apt-get update && apt-get install -y neovim && \
+      pip3 install neovim-remote pynvim
 
 #install rust packages {{{1
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
@@ -52,12 +37,15 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
       sd
 
 #ctags {{{1
-RUN git clone https://github.com/universal-ctags/ctags.git && cd ctags && \
+RUN apt-get update && apt-get install -y \
+      autoconf \
+      pkg-config && \
+      git clone https://github.com/universal-ctags/ctags.git && cd ctags && \
       ./autogen.sh && ./configure && make && make install
       
 
 #install general python packages {{{1
-RUN pip3 install thefuck
+RUN pip3 install cmakelint bpython
 
 #fix locale issues??? {{{1
 RUN apt-get clean && apt-get update && apt-get install -y locales && \
@@ -65,7 +53,7 @@ RUN apt-get clean && apt-get update && apt-get install -y locales && \
       LANG=en_US.UTF-8
 
 #install dotfiles {{{1
-RUN git clone https://github.com/rgreenblatt/dotfiles && \
+RUN cd ~ && git clone https://github.com/rgreenblatt/dotfiles && \
       cd dotfiles && ./install.sh devbox -c && ./autoinstall.sh
 
 #clean up {{{1
